@@ -14,20 +14,22 @@ def prependCover(bookLocation, coverLocation):
     cover = coverLocation
     coverPdf = cover + ".pdf"
 
-    # Load cover
+    # Convert cover to PDF
     with Image.open(cover) as coverImg:
         coverImg.save(coverPdf, "pdf")
 
-    #merge cover and pdf
+    # Add cover to new PDF
     merger.append(coverPdf)
 
-    #check for watermark
+    # Check for watermark
     if watermark in book.metadata:
+        # Add all but first page to new PDF
         merger.append(book, None, PageRange("1:"))
     else:
+        # Add all pages to new PDF
         merger.append(book)
 
-    #update watermark
+    # Update watermark
     merger.add_metadata(
             {
                 **book.metadata,
@@ -35,10 +37,12 @@ def prependCover(bookLocation, coverLocation):
             }
     )
 
-    #write new pdf
+    # Write new pdf
     merger.write(bookLocation)
-    Path(coverPdf).unlink()
     merger.close()
+    
+    #Delete PDF cover
+    Path(coverPdf).unlink()
 
 
 prependCover(sys.argv[1], sys.argv[2])
