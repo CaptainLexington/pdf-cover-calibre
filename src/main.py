@@ -43,6 +43,3 @@ def prependCover(bookLocation, coverLocation):
     
     #Delete PDF cover
     Path(coverPdf).unlink()
-
-
-prependCover(sys.argv[1], sys.argv[2])
