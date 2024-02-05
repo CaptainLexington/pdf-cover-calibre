@@ -12,6 +12,7 @@ ROADMAP, LIMITATIONS, & CONTRIBUTNG
 - Errors will display serially. If many operations fail in a row, you will have a heck of a time clearing each error dialog.
 - On some PDFs, the inserted cover image sits smaller on the page in some ereaders than I would expect, but I don't know understand the PDF format enough to guess what the cause of this is, and it seems relatively uncommon.
 - There are no options, though perhaps some users would like to configure, say, the DPI, or whether the cover fits to height or width.
+
 I made this plugin primarily for myself, and in its current state it suits my needs. Feel free to leave a GitHub issue if you encounter bugs or desire new features, but tasks of real complexity will probably require contributions from someone else.
 
 
