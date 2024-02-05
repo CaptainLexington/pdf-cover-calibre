@@ -2,6 +2,7 @@ from calibre.gui2.actions import InterfaceAction
 from pathlib import Path
 import sys
 import math
+import numbers
 
 class PDFCoverAction(InterfaceAction):
     
@@ -38,6 +39,8 @@ class PDFCoverAction(InterfaceAction):
         self.qaction.triggered.connect(self.insert_covers)
 
     def insert_covers(self):
+        from calibre.gui2 import error_dialog
+
         rows = self.gui.library_view.selectionModel().selectedRows()
         if not rows or len(rows) == 0:
             return error_dialog(self.gui, _('No rows selected'),
@@ -46,9 +49,18 @@ class PDFCoverAction(InterfaceAction):
         db = self.gui.current_db.new_api
 
         for book_id in book_ids:
-            print(book_id)
             cover = db.cover(book_id, as_path=True)
             book = db.format(book_id, "pdf", as_path=True)
+            metadata = db.get_metadata(book_id)
+    
+            if cover == None:
+                error_dialog(self.gui, 'Cannot Insert Cover', f' \"{metadata.title}\" does not have a cover', show=True)
+                continue
+                
+            if book == None:
+                error_dialog(self.gui, 'Cannot Insert Cover', f' \"{metadata.title}\" is not in the PDF format', show=True)
+                continue
+                
 
             self.prepend_cover(book, cover)
 
@@ -64,57 +76,61 @@ class PDFCoverAction(InterfaceAction):
             from pypdf import PdfWriter, PdfReader, PageRange
             from PIL import Image
 
-            merger = PdfWriter()
+            new_pdf = PdfWriter()
 
             book = PdfReader(book_location)
             cover = cover_location
             cover_pdf = cover + ".pdf"
-
-            book_box = book.pages[-1].mediabox
+            
+            reference_page = book.pages[-1]
+            book_pdf_units = reference_page.user_unit / 72
+            book_box = reference_page.mediabox
             book_width = book_box.width
             book_height = book_box.height
-
-
 
             with Image.open(cover) as cover_img:
                 # Resize cover image to fix in book_box
                 cover_width = cover_img.width
                 cover_height = cover_img.height
+                (cover_dpi_x, cover_dpi_y) = cover_img.info.get("dpi", (96, 96))
 
-                scale = min(book_width/cover_width, book_height/cover_height)
-                scaled_width = math.floor(cover_width * scale)
-                scaled_height = math.floor(cover_height * scale)
+                cover_width_pdf_units = cover_width * (1/book_pdf_units / cover_dpi_x)
+                cover_height_pdf_units = cover_height * (1/book_pdf_units / cover_dpi_y)
 
-                print(f'Scale Factor: {scale}')
-                print(f'Widths: {scaled_width} :: {book_width}')
-                print(f'Heights: {scaled_height} :: {book_height}')
+                scale = max(book_width/cover_width_pdf_units, book_height/cover_height_pdf_units)
+                scaled_width_pdf_units = cover_width_pdf_units * scale
+                scaled_height_pdf_units = cover_height_pdf_units * scale
 
-                scaled_cover = cover_img.resize((scaled_width, scaled_height))
                 # Convert cover to PDF
-                scaled_cover.save(cover_pdf, "pdf")
+                cover_img.save(cover_pdf, format="pdf")
+
+                cover_pdf_page = PdfReader(cover_pdf).pages[0]
+                cover_pdf_page.scale_to(width=scaled_width_pdf_units,height=scaled_height_pdf_units)
+                
+                # Add cover to new PDF
+                new_pdf.add_page(cover_pdf_page)
+
+                # Check for watermark
+                if self.watermark in book.metadata:
+                    # Add all but first page to new PDF
+                    new_pdf.append(book, None, PageRange("1:"))
+                else:
+                    # Add all pages to new PDF
+                    new_pdf.append(book)
+
+                # Update watermark
+                new_pdf.add_metadata(
+                        {
+                            **book.metadata,
+                            self.watermark : "true"
+                        }
+                )
+
+                # Write new pdf
+                new_pdf.write(book_location)
     
-            # Add cover to new PDF
-            merger.append(cover_pdf)
+                #Delete PDF cover
+                Path(cover_pdf).unlink()
 
-            # Check for watermark
-            if self.watermark in book.metadata:
-                # Add all but first page to new PDF
-                merger.append(book, None, PageRange("1:"))
-            else:
-                # Add all pages to new PDF
-                merger.append(book)
 
-            # Update watermark
-            merger.add_metadata(
-                    {
-                        **book.metadata,
-                        self.watermark : "true"
-                    }
-            )
-
-            # Write new pdf
-            merger.write(book_location)
-            merger.close()
-    
-            #Delete PDF cover
-            Path(cover_pdf).unlink()
+        new_pdf.close()
