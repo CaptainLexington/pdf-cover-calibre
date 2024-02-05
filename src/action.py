@@ -1,6 +1,7 @@
 from calibre.gui2.actions import InterfaceAction
 from pathlib import Path
 import sys
+import math
 
 class PDFCoverAction(InterfaceAction):
     
@@ -26,6 +27,11 @@ class PDFCoverAction(InterfaceAction):
         # should pass a list of names to get_icons. In this case, get_icons
         # will return a dictionary mapping names to QIcons. Names that
         # are not found in the zip file will result in null QIcons.
+
+        icon = get_icons("images/icon.png", "Insert PDF Cover")
+
+        # Assign our menu to this action and an icon
+        self.qaction.setIcon(icon)
 
         # The qaction is automatically created from the action_spec defined
         # above
@@ -64,9 +70,28 @@ class PDFCoverAction(InterfaceAction):
             cover = cover_location
             cover_pdf = cover + ".pdf"
 
-            # Convert cover to PDF
-            with Image.open(cover) as coverImg:
-                coverImg.save(cover_pdf, "pdf")
+            book_box = book.pages[-1].mediabox
+            book_width = book_box.width
+            book_height = book_box.height
+
+
+
+            with Image.open(cover) as cover_img:
+                # Resize cover image to fix in book_box
+                cover_width = cover_img.width
+                cover_height = cover_img.height
+
+                scale = min(book_width/cover_width, book_height/cover_height)
+                scaled_width = math.floor(cover_width * scale)
+                scaled_height = math.floor(cover_height * scale)
+
+                print(f'Scale Factor: {scale}')
+                print(f'Widths: {scaled_width} :: {book_width}')
+                print(f'Heights: {scaled_height} :: {book_height}')
+
+                scaled_cover = cover_img.resize((scaled_width, scaled_height))
+                # Convert cover to PDF
+                scaled_cover.save(cover_pdf, "pdf")
     
             # Add cover to new PDF
             merger.append(cover_pdf)
