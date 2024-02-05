@@ -1,7 +1,7 @@
 PDF Cover Plugin for Calibre
 ============================
 
-PDFs do not support meta-tag cover files like HTML-based ebook formats such as ePub. Ebook library and reading software usually displays the first page of the PDF as the cover, but for many PDFs, such as those of out-of-print, public domain books - have unclear, unhelpful, unattractive, or even blank first pages.
+PDFs do not support meta-tag cover files like HTML-based ebook formats such as ePub. Ebook library and reading software usually displays the first page of the PDF as the cover, but many PDFs, such as those of out-of-print, public domain books, have unclear, unhelpful, unattractive, or even blank first pages.
 
 This plugin takes the cover set in the Calibre metadata and inserts it as a new first page of the book's PDF. If you change the cover later, subsequent operations will replace the first page instead of prepending indefinitely.
 
