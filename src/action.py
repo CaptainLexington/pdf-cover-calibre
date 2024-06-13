@@ -111,7 +111,7 @@ class PDFCoverAction(InterfaceAction):
                 new_pdf.add_page(cover_pdf_page)
 
                 # Check for watermark
-                if self.watermark in book.metadata:
+                if book.metadata is not None and self.watermark in book.metadata:
                     # Add all but first page to new PDF
                     new_pdf.append(book, None, PageRange("1:"))
                 else:
@@ -119,11 +119,12 @@ class PDFCoverAction(InterfaceAction):
                     new_pdf.append(book)
 
                 # Update watermark
+                metadata = {} if book.metadata is None else book.metadata
                 new_pdf.add_metadata(
-                        {
-                            **book.metadata,
-                            self.watermark : "true"
-                        }
+                    {
+                        **metadata,
+                        self.watermark: "true"
+                    }
                 )
 
                 # Write new pdf
